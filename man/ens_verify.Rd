@@ -26,6 +26,8 @@ ens_verify(
   rank_hist = TRUE,
   crps = TRUE,
   crps_decomp = TRUE,
+  uui = FALSE,
+  uui_cntrl = 0,
   tw_crps = TRUE,
   brier = TRUE,
   reliability = TRUE,
@@ -59,6 +61,8 @@ ens_verify(
   rank_hist = TRUE,
   crps = TRUE,
   crps_decomp = TRUE,
+  uui = FALSE,
+  uui_cntrl = 0,
   tw_crps = TRUE,
   brier = TRUE,
   reliability = TRUE,
@@ -139,6 +143,13 @@ there is a large number (> 1000) of groups.}
 \item{crps_decomp}{Logical. Whether to compute the decomposition of the CRPS
 into potential and reliability components.}
 
+\item{uui}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Logical. Whether to compute
+the UUI spread-skill.}
+
+\item{uui_cntrl}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} The ensemble member to
+consider as the control member in UUI spread-skill calculations. Defaults
+to \code{0}.}
+
 \item{tw_crps}{Logical. Whether to compute the the threshold weighted CRPS.
 Note that tw_crps cannot be computed for \code{comparator = "eq"} or
 \code{comparator = "outside"}. Will be ignored if no thresholds are set.}
@@ -172,13 +183,6 @@ scores from the observed and forecast probabilities. See
 \item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
 column of the output. If the function is dispatched on a \code{harp_list}
 object, the names of the \code{harp_list} are automatically used.}
-
-\item{uui}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Logical. Whether to compute
-the UUI spread-skill.}
-
-\item{uui_cntrl}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} The ensemble member to
-consider as the control member in UUI spread-skill calculations. Defaults
-to \code{0}.}
 
 \item{new_score_opts}{Named list of options for \code{new_ens_score} and
 \code{new_ens_prob_score}.}
