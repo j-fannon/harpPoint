@@ -49,6 +49,11 @@
 #' @param crps Logical. Whether to compute the CRPS. Defaults to `TRUE`.
 #' @param crps_decomp Logical. Whether to compute the decomposition of the CRPS
 #'   into potential and reliability components.
+#' @param uui `r lifecycle::badge("experimental")` Logical. Whether to compute
+#'   the UUI spread-skill.
+#' @param uui_cntrl `r lifecycle::badge("experimental")` The ensemble member to
+#'   consider as the control member in UUI spread-skill calculations. Defaults
+#'   to `0`.
 #' @param tw_crps Logical. Whether to compute the the threshold weighted CRPS.
 #'   Note that tw_crps cannot be computed for `comparator = "eq"` or
 #'   `comparator = "outside"`. Will be ignored if no thresholds are set.
@@ -222,6 +227,8 @@ ens_verify <- function(
   rank_hist          = TRUE,
   crps               = TRUE,
   crps_decomp        = TRUE,
+  uui                = FALSE,
+  uui_cntrl          = 0,
   tw_crps            = TRUE,
   brier              = TRUE,
   reliability        = TRUE,
@@ -270,6 +277,8 @@ ens_verify.harp_ens_point_df <- function(
   rank_hist          = TRUE,
   crps               = TRUE,
   crps_decomp        = TRUE,
+  uui                = FALSE,
+  uui_cntrl          = 0,
   tw_crps            = TRUE,
   brier              = TRUE,
   reliability        = TRUE,
@@ -413,6 +422,20 @@ ens_verify.harp_ens_point_df <- function(
     if (crps && crps_decomp) {
       ens_summary_scores[["crps"]] <- dplyr::select(
         ens_summary_scores[["crps"]], -dplyr::all_of("crps")
+      )
+    }
+
+    if (uui) {
+      ens_summary_scores[["uui"]] <- compute_score(
+        groupings,
+        .fcst,
+        harpCore::member_colnames(.fcst),
+        chr_param,
+        fcst_model,
+        "uui",
+        show_progress,
+        type = "ens",
+        score_opts = list(control = uui_cntrl, circle = circle)
       )
     }
 
@@ -603,6 +626,8 @@ ens_verify.harp_list <- function(
   rank_hist          = TRUE,
   crps               = TRUE,
   crps_decomp        = TRUE,
+  uui                = FALSE,
+  uui_cntrl          = 0,
   tw_crps            = TRUE,
   brier              = TRUE,
   reliability        = TRUE,
@@ -754,6 +779,32 @@ prep_ens_thresh_data <- function(
   fcst_df
 }
 
+prep_ens_uui <- function(df, fc_col, obs_col, opts) {
+  message(cli::col_br_yellow("Prepping data for UUI "), appendLF = FALSE)
+  if (!is.null(opts[["control"]])) {
+    df       <- harpCore::select_members(df, opts[["control"]], invert = TRUE)
+  }
+  mbr_cols <- harpCore::member_colnames(df)
+
+  # Compute the ensemble mean for the variance calculation
+  df <- harpCore::ens_stats(df, sd = FALSE, keep_members = TRUE)
+  df[["ens_bias"]] <- harpPoint:::bias(
+    df[["ens_mean"]], df[[obs_col]], opts[["circle"]]
+  )
+
+  # Population variance is mean((x - xbar) ^ 2)
+  df <- harpCore::ens_stats(
+    dplyr::mutate(
+      df,
+      dplyr::across(dplyr::all_of(mbr_cols), ~(.x - .data[["ens_mean"]]) ^ 2)
+    ),
+    sd = FALSE
+  )
+  message(cli::col_br_green(cli::symbol$tick))
+  dplyr::rename(df, uui_spread = "ens_mean")
+
+}
+
 # tick the progress bar
 tick_progress <- function(show_prog, pb_env) {
   if (!show_prog) return()
@@ -858,6 +909,7 @@ compute_ens_rank_histogram <- function(grouped_fcst, show_prog, pb_env, ...) {
     )
   )
 }
+
 
 
 
@@ -1061,6 +1113,20 @@ compute_ens_prob_scores <- function(grouped_fcst, show_prog, pb_env, opts) {
   )
 }
 
+# UUI spread and skill
+compute_ens_uui <- function(grouped_fcst, show_prog, pb_env, ...) {
+  res <- dplyr::summarise(
+    grouped_fcst,
+    uui_spread = sqrt(2 * mean(.data[["uui_spread"]])),
+    uui_skill  = sqrt(
+      mean(.data[["ens_bias"]] ^ 2) - mean(.data[["ens_bias"]]) ^ 2
+    )
+  )
+  dplyr::mutate(
+    res,
+    uui_spread_skill_ratio = .data[["uui_spread"]] / .data[["uui_skill"]]
+  )
+}
 get_brier_sweep_fun <- function(opts) {
   if (opts$brier && opts$reliability) {
     return(sweep_brier_both)

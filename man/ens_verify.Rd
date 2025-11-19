@@ -173,6 +173,13 @@ scores from the observed and forecast probabilities. See
 column of the output. If the function is dispatched on a \code{harp_list}
 object, the names of the \code{harp_list} are automatically used.}
 
+\item{uui}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Logical. Whether to compute
+the UUI spread-skill.}
+
+\item{uui_cntrl}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} The ensemble member to
+consider as the control member in UUI spread-skill calculations. Defaults
+to \code{0}.}
+
 \item{new_score_opts}{Named list of options for \code{new_ens_score} and
 \code{new_ens_prob_score}.}
 }
