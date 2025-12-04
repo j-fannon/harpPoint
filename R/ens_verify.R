@@ -12,6 +12,8 @@
 #' @param thresholds A numeric vector of thresholds for which to compute the
 #'   threshold based scores. Set to NULL (the default) to only compute summary
 #'   scores.
+#' @param clean_thresh Logical. Whether to remove thresholds that are outside
+#'   the range of the forecasts and observations.
 #' @param groupings The groups for which to compute the scores. See
 #'   \link[dplyr]{group_by} for more information of how grouping works.
 #' @param summary Logical. Whether to compute summary scores or not. Default is
@@ -65,6 +67,13 @@
 #'   (ROC). Defaults to `TRUE`. Will be ignored if no thresholds are set.
 #' @param econ_val Logical. Whether to compute the economic value. Defaults to
 #'   `TRUE`. Will be ignored if no thresholds are set.
+#' @param dttm_pluck_freq,dttm_pluck_offset If verification is grouped by valid
+#'   date-time, select only date times at a frequency set by `dttm_pluck_freq`.
+#'   The frequency is relative to 00 UTC, so use `dttm_freq_offset` to change
+#'   the reference time. For example, to get 12 UTC once a day, set
+#'   `dttm_pluck_freq = "1d"` and `dttm_pluck_offset = "12h"`. Should be a value
+#'   that can be interpreted by \code{\link[harpCore]{to_seconds}}. Only applies
+#'   if one of `groupings` is `"valid_dttm"`.
 #' @param show_progress Logical - whether to show progress bars. Defaults to
 #'   `TRUE`.
 #' @param new_ens_score Character vector. Names of other
@@ -211,6 +220,7 @@ ens_verify <- function(
   parameter,
   verify_members     = TRUE,
   thresholds         = NULL,
+  clean_thresh       = TRUE,
   comparator         = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
   include_low        = TRUE,
   include_high       = TRUE,
@@ -234,6 +244,8 @@ ens_verify <- function(
   reliability        = TRUE,
   roc                = TRUE,
   econ_val           = TRUE,
+  dttm_pluck_freq    = NULL,
+  dttm_pluck_offset  = NULL,
   show_progress      = TRUE,
   new_ens_score      = NULL,
   new_ens_prob_score = NULL,
@@ -261,6 +273,7 @@ ens_verify.harp_ens_point_df <- function(
   parameter,
   verify_members     = TRUE,
   thresholds         = NULL,
+  clean_thresh       = TRUE,
   comparator         = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
   include_low        = TRUE,
   include_high       = TRUE,
@@ -284,6 +297,8 @@ ens_verify.harp_ens_point_df <- function(
   reliability        = TRUE,
   roc                = TRUE,
   econ_val           = TRUE,
+  dttm_pluck_freq    = NULL,
+  dttm_pluck_offset  = NULL,
   show_progress      = TRUE,
   new_ens_score      = NULL,
   new_ens_prob_score = NULL,
@@ -315,6 +330,14 @@ ens_verify.harp_ens_point_df <- function(
 
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
+  }
+
+  # Remove thresholds outside the range of the data
+  if (clean_thresh) {
+    thresholds <- clean_thresholds(
+      .fcst[c(harpCore::member_colnames(col_names), chr_param)],
+      thresholds, comparator
+    )
   }
 
   if (is.function(jitter_fcst)) {
@@ -358,6 +381,8 @@ ens_verify.harp_ens_point_df <- function(
         fcst_model,
         "summary",
         show_progress,
+        dttm_pluck_freq = dttm_pluck_freq,
+        dttm_pluck_offset = dttm_pluck_offset,
         type = "ens",
         score_opts = list(circle = circle, drop_members = spread_drop_member)
       )
@@ -373,6 +398,8 @@ ens_verify.harp_ens_point_df <- function(
         fcst_model,
         "hexbin",
         show_progress,
+        dttm_pluck_freq = dttm_pluck_freq,
+        dttm_pluck_offset = dttm_pluck_offset,
         type = "ens",
         score_opts = list(num_bins = num_bins)
       )
@@ -387,6 +414,8 @@ ens_verify.harp_ens_point_df <- function(
         fcst_model,
         "rank_histogram",
         show_progress,
+        dttm_pluck_freq = dttm_pluck_freq,
+        dttm_pluck_offset = dttm_pluck_offset,
         type = "ens",
         score_opts = list(circle = circle, drop_members = spread_drop_member)
       )
@@ -401,6 +430,8 @@ ens_verify.harp_ens_point_df <- function(
         fcst_model,
         "crps",
         show_progress,
+        dttm_pluck_freq = dttm_pluck_freq,
+        dttm_pluck_offset = dttm_pluck_offset,
         type = "ens",
         score_opts = list(num_ref_members = num_ref_members)
       )
@@ -415,6 +446,8 @@ ens_verify.harp_ens_point_df <- function(
         fcst_model,
         "crps_decomp",
         show_progress,
+        dttm_pluck_freq = dttm_pluck_freq,
+        dttm_pluck_offset = dttm_pluck_offset,
         type = "ens"
       )
     }
@@ -434,6 +467,8 @@ ens_verify.harp_ens_point_df <- function(
         fcst_model,
         "uui",
         show_progress,
+        dttm_pluck_freq = dttm_pluck_freq,
+        dttm_pluck_offset = dttm_pluck_offset,
         type = "ens",
         score_opts = list(control = uui_cntrl, circle = circle)
       )
@@ -448,6 +483,8 @@ ens_verify.harp_ens_point_df <- function(
         fcst_model,
         new_score,
         show_progress,
+        dttm_pluck_freq = dttm_pluck_freq,
+        dttm_pluck_offset = dttm_pluck_offset,
         type       = "ens",
         score_opts = new_ens_score_opts
       )
@@ -465,6 +502,8 @@ ens_verify.harp_ens_point_df <- function(
         fcst_model,
         "meta",
         show_progress,
+        dttm_pluck_freq = dttm_pluck_freq,
+        dttm_pluck_offset = dttm_pluck_offset,
         type = "ens"
       )
     }
@@ -493,6 +532,8 @@ ens_verify.harp_ens_point_df <- function(
         fcst_model,
         "prob_scores",
         show_progress,
+        dttm_pluck_freq = dttm_pluck_freq,
+        dttm_pluck_offset = dttm_pluck_offset,
         type = "ens",
         thresholds   = thresholds,
         comparator   = comparator,
@@ -525,6 +566,8 @@ ens_verify.harp_ens_point_df <- function(
         fcst_model,
         "tw_crps",
         show_progress,
+        dttm_pluck_freq = dttm_pluck_freq,
+        dttm_pluck_offset = dttm_pluck_offset,
         type = "ens",
         thresholds   = thresholds,
         comparator   = comparator,
@@ -610,6 +653,7 @@ ens_verify.harp_list <- function(
   parameter,
   verify_members     = TRUE,
   thresholds         = NULL,
+  clean_thresh       = TRUE,
   comparator         = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
   include_low        = TRUE,
   include_high       = TRUE,
@@ -633,6 +677,8 @@ ens_verify.harp_list <- function(
   reliability        = TRUE,
   roc                = TRUE,
   econ_val           = TRUE,
+  dttm_pluck_freq    = NULL,
+  dttm_pluck_offset  = NULL,
   show_progress      = TRUE,
   new_ens_score      = NULL,
   new_ens_prob_score = NULL,
@@ -655,11 +701,12 @@ ens_verify.harp_list <- function(
     purrr::pmap(
       list(.fcst, names(.fcst), spread_drop_member),
       function(x, y, z) ens_verify(
-        x, !!parameter, verify_members, thresholds, comparator, include_low,
-        include_high, groupings, summary, circle,
+        x, !!parameter, verify_members, thresholds, clean_thresh, comparator,
+        include_low, include_high, groupings, summary, circle,
         rel_probs, num_ref_members, z, jitter_fcst, climatology,
         hexbin, num_bins, rank_hist, crps, crps_decomp, tw_crps,
-        brier, reliability, roc, econ_val, show_progress, new_ens_score,
+        brier, reliability, roc, econ_val,
+        dttm_pluck_freq, dttm_pluck_offset, show_progress, new_ens_score,
         new_ens_prob_score, new_ens_score_opts, fcst_model = y
       )
     )

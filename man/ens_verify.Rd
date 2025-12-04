@@ -10,6 +10,7 @@ ens_verify(
   parameter,
   verify_members = TRUE,
   thresholds = NULL,
+  clean_thresh = TRUE,
   comparator = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
   include_low = TRUE,
   include_high = TRUE,
@@ -33,6 +34,8 @@ ens_verify(
   reliability = TRUE,
   roc = TRUE,
   econ_val = TRUE,
+  dttm_pluck_freq = NULL,
+  dttm_pluck_offset = NULL,
   show_progress = TRUE,
   new_ens_score = NULL,
   new_ens_prob_score = NULL,
@@ -45,6 +48,7 @@ ens_verify(
   parameter,
   verify_members = TRUE,
   thresholds = NULL,
+  clean_thresh = TRUE,
   comparator = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
   include_low = TRUE,
   include_high = TRUE,
@@ -68,6 +72,8 @@ ens_verify(
   reliability = TRUE,
   roc = TRUE,
   econ_val = TRUE,
+  dttm_pluck_freq = NULL,
+  dttm_pluck_offset = NULL,
   show_progress = TRUE,
   new_ens_score = NULL,
   new_ens_prob_score = NULL,
@@ -92,6 +98,9 @@ computed. If you wish to compute categorical scores, the separate
 \item{thresholds}{A numeric vector of thresholds for which to compute the
 threshold based scores. Set to NULL (the default) to only compute summary
 scores.}
+
+\item{clean_thresh}{Logical. Whether to remove thresholds that are outside
+the range of the forecasts and observations.}
 
 \item{groupings}{The groups for which to compute the scores. See
 \link[dplyr]{group_by} for more information of how grouping works.}
@@ -165,6 +174,14 @@ Will be ignored if no thresholds are set.}
 
 \item{econ_val}{Logical. Whether to compute the economic value. Defaults to
 \code{TRUE}. Will be ignored if no thresholds are set.}
+
+\item{dttm_pluck_freq, dttm_pluck_offset}{If verification is grouped by valid
+date-time, select only date times at a frequency set by \code{dttm_pluck_freq}.
+The frequency is relative to 00 UTC, so use \code{dttm_freq_offset} to change
+the reference time. For example, to get 12 UTC once a day, set
+\code{dttm_pluck_freq = "1d"} and \code{dttm_pluck_offset = "12h"}. Should be a value
+that can be interpreted by \code{\link[harpCore]{to_seconds}}. Only applies
+if one of \code{groupings} is \code{"valid_dttm"}.}
 
 \item{show_progress}{Logical - whether to show progress bars. Defaults to
 \code{TRUE}.}

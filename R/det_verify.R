@@ -170,6 +170,8 @@ det_verify <- function(
   summary            = TRUE,
   hexbin             = TRUE,
   num_bins           = 30,
+  dttm_pluck_freq    = NULL,
+  dttm_pluck_offset  = NULL,
   show_progress      = TRUE,
   new_det_score      = NULL,
   new_det_cont_score = NULL,
@@ -201,6 +203,8 @@ det_verify.harp_ens_point_df <- function(
   summary            = TRUE,
   hexbin             = TRUE,
   num_bins           = 30,
+  dttm_pluck_freq    = NULL,
+  dttm_pluck_offset  = NULL,
   show_progress      = TRUE,
   new_det_score      = NULL,
   new_det_cont_score = NULL,
@@ -244,7 +248,9 @@ det_verify.harp_ens_point_df <- function(
           {{parameter}}, thresholds, clean_thresh,
           comparator, include_low, include_high,
           groupings, circle, summary, hexbin, num_bins,
-          show_progress, fcst_model, ...
+          dttm_pluck_freq, dttm_pluck_offset,
+          show_progress, new_det_score, new_det_cont_score, new_det_score_opts,
+          fcst_model, ...
         )
       }
     )
@@ -269,6 +275,8 @@ det_verify.harp_det_point_df <- function(
   hexbin             = TRUE,
   num_bins           = 30,
   show_progress      = TRUE,
+  dttm_pluck_freq    = NULL,
+  dttm_pluck_offset  = NULL,
   new_det_score      = NULL,
   new_det_cont_score = NULL,
   new_det_score_opts = list(),
@@ -350,21 +358,24 @@ det_verify.harp_det_point_df <- function(
   if (summary) {
     det_summary_scores[["basic"]] <- compute_score(
       groupings, .fcst, fcst_col, chr_param, fcst_model,
-      "summary", show_progress, score_opts = list(circle = circle)
+      "summary", show_progress, dttm_pluck_freq = dttm_pluck_freq,
+      dttm_pluck_offset = dttm_pluck_offset, score_opts = list(circle = circle)
     )
   }
 
   if (hexbin) {
     det_summary_scores[["hexbin"]] <- compute_score(
       groupings, .fcst, fcst_col, chr_param, fcst_model,
-      "hexbin", show_progress, score_opts = list(num_bins = 30)
+      "hexbin", show_progress, dttm_pluck_freq = dttm_pluck_freq,
+      dttm_pluck_offset = dttm_pluck_offset, score_opts = list(num_bins = 30)
     )
   }
 
   for (new_score in new_det_score) {
     det_summary_scores[[new_score]] <- compute_score(
       groupings, .fcst, fcst_col, chr_param, fcst_model,
-      new_score, show_progress, score_opts = new_det_score_opts
+      new_score, show_progress, dttm_pluck_freq = dttm_pluck_freq,
+      dttm_pluck_offset = dttm_pluck_offset, score_opts = new_det_score_opts
     )
   }
 
@@ -382,7 +393,8 @@ det_verify.harp_det_point_df <- function(
       groupings, .fcst, fcst_col, chr_param, fcst_model,
       "threshold", show_progress, thresholds = thresholds,
       comparator = comparator, include_low = include_low,
-      include_high = include_high,
+      include_high = include_high, dttm_pluck_freq = dttm_pluck_freq,
+      dttm_pluck_offset = dttm_pluck_offset,
       score_opts = c(
         list(
           new_det_cont_score = new_det_cont_score
@@ -424,6 +436,8 @@ det_verify.harp_list <- function(
   summary            = TRUE,
   hexbin             = TRUE,
   num_bins           = 30,
+  dttm_pluck_freq    = NULL,
+  dttm_pluck_offset  = NULL,
   show_progress      = TRUE,
   new_det_score      = NULL,
   new_det_cont_score = NULL,
@@ -441,6 +455,7 @@ det_verify.harp_list <- function(
       ~det_verify(
         .x, {{parameter}}, thresholds, clean_thresh, comparator,
         include_low, include_high, groupings, circle, summary, hexbin, num_bins,
+        dttm_pluck_freq, dttm_pluck_offset,
         show_progress, new_det_score, new_det_cont_score, new_det_score_opts,
         fcst_model = .y, ...
       )
@@ -554,7 +569,8 @@ clean_thresholds <- function(all_data, thresholds, comparator) {
 compute_score <- function(
   grps_list, fcst_df, fcst_col, obs_col, fcst_model,
   score_name, show_progress, thresholds = NULL, comparator = "ge",
-  include_low = TRUE, include_high = TRUE, score_opts = list(), type = "det"
+  include_low = TRUE, include_high = TRUE, dttm_pluck_freq = NULL,
+  dttm_pluck_offset = NULL, score_opts = list(), type = "det"
 ) {
   prep_fun <- paste("prep", type, score_name, sep = "_")
   if (fun_exists(prep_fun, warn = FALSE)) {
@@ -568,7 +584,8 @@ compute_score <- function(
         g, fcst_df, fcst_col, obs_col,
         score_name, show_progress, thresholds,
         comparator = comparator, include_low = include_low,
-        include_high = include_high, score_opts, type
+        include_high = include_high, dttm_pluck_freq, dttm_pluck_offset,
+        score_opts, type
       )
     }
   ) %>%
@@ -582,7 +599,8 @@ compute_score <- function(
 compute_grp_score <- function(
   compute_group, fcst_df, fcst_col, obs_col,
   score_name, show_progress, thresholds = NULL, comparator = "ge",
-  include_low = TRUE, include_high = TRUE, score_opts = list(), type = "det"
+  include_low = TRUE, include_high = TRUE, dttm_pluck_freq = NULL,
+  dttm_pluck_offset = NULL, score_opts = list(), type = "det"
 ) {
 
   local_fcst_col <- intersect(c(fcst_col, "fcst"), colnames(fcst_df))
@@ -615,6 +633,28 @@ compute_grp_score <- function(
   score_text  <- cli::col_blue(glue::glue("{type}: {score_name} for {group_names}"))
 
   score_func <- get(paste("compute", type, score_name, sep = "_"))
+
+  # If specific dttms are to be plucked, do it here - but only if valid_dttm
+  # is one of the groups.
+
+  if (is.element("valid_dttm", group_vars) && !is.null(dttm_pluck_freq)) {
+    pluck_start <- min(fcst_df[["valid_dttm"]])
+    if (is.null(dttm_pluck_offset)) {
+      pluck_start <- format(pluck_start, "%Y%m%d")
+    } else {
+      pluck_start <- harpCore::as_str_dttm(
+        pluck_start + harpCore::to_seconds(dttm_pluck_offset)
+      )
+    }
+    pluck_end   <- paste0(
+      format(max(fcst_df[["valid_dttm"]]), "%Y%m%d"), "2359"
+    )
+    pluck_dttm <- harpCore::as_dttm(
+      harpCore::seq_dttm(pluck_start, pluck_end, dttm_pluck_freq)
+    )
+
+    fcst_df <- dplyr::filter(fcst_df, .data[["valid_dttm"]] %in% pluck_dttm)
+  }
 
   if (show_progress) {
     pb_name  <- score_text
