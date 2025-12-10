@@ -346,9 +346,17 @@ ens_verify.harp_ens_point_df <- function(
 
   if (verify_members) {
     det_summary_scores <- det_verify(
-      .fcst, !! parameter, groupings = groupings, circle = circle,
-      summary = summary, hexbin = hexbin, num_bins = num_bins,
-      show_progress = show_progress
+      .fcst,
+      !!parameter,
+      groupings          = groupings,
+      circle             = circle,
+      summary            = summary,
+      hexbin             = hexbin,
+      num_bins           = num_bins,
+      dttm_pluck_freq    = dttm_pluck_freq,
+      dttm_pluck_offset  = dttm_pluck_offset,
+      show_progress      = show_progress,
+      fcst_model         = fcst_model
     ) %>%
       purrr::pluck("det_summary_scores")
   } else {
@@ -701,13 +709,41 @@ ens_verify.harp_list <- function(
     purrr::pmap(
       list(.fcst, names(.fcst), spread_drop_member),
       function(x, y, z) ens_verify(
-        x, !!parameter, verify_members, thresholds, clean_thresh, comparator,
-        include_low, include_high, groupings, summary, circle,
-        rel_probs, num_ref_members, z, jitter_fcst, climatology,
-        hexbin, num_bins, rank_hist, crps, crps_decomp, tw_crps,
-        brier, reliability, roc, econ_val,
-        dttm_pluck_freq, dttm_pluck_offset, show_progress, new_ens_score,
-        new_ens_prob_score, new_ens_score_opts, fcst_model = y
+        x,
+        !!parameter,
+        verify_members     = verify_members,
+        thresholds         = thresholds,
+        clean_thresh       = clean_thresh,
+        comparator         = comparator,
+        include_low        = include_low,
+        include_high       = include_high,
+        groupings          = groupings,
+        summary            = summary,
+        circle             = circle,
+        rel_probs          = rel_probs,
+        num_ref_members    = num_ref_members,
+        spread_drop_member = z,
+        jitter_fcst        = jitter_fcst,
+        climatology        = climatology,
+        hexbin             = hexbin,
+        num_bins           = num_bins,
+        rank_hist          = rank_hist,
+        crps               = crps,
+        crps_decomp        = crps_decomp,
+        uui                = uui,
+        uui_cntrl          = uui_cntrl,
+        tw_crps            = tw_crps,
+        brier              = brier,
+        reliability        = reliability,
+        roc                = roc,
+        econ_val           = econ_val,
+        dttm_pluck_freq    = dttm_pluck_freq,
+        dttm_pluck_offset  = dttm_pluck_offset,
+        show_progress      = show_progress,
+        new_ens_score      = new_ens_score,
+        new_ens_prob_score = new_ens_prob_score,
+        new_ens_score_opts = new_ens_score_opts,
+        fcst_model         = y
       )
     )
   )

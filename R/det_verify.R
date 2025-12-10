@@ -274,9 +274,9 @@ det_verify.harp_det_point_df <- function(
   summary            = TRUE,
   hexbin             = TRUE,
   num_bins           = 30,
-  show_progress      = TRUE,
   dttm_pluck_freq    = NULL,
   dttm_pluck_offset  = NULL,
+  show_progress      = TRUE,
   new_det_score      = NULL,
   new_det_cont_score = NULL,
   new_det_score_opts = list(),
@@ -453,11 +453,26 @@ det_verify.harp_list <- function(
     purrr::imap(
       .fcst,
       ~det_verify(
-        .x, {{parameter}}, thresholds, clean_thresh, comparator,
-        include_low, include_high, groupings, circle, summary, hexbin, num_bins,
-        dttm_pluck_freq, dttm_pluck_offset,
-        show_progress, new_det_score, new_det_cont_score, new_det_score_opts,
-        fcst_model = .y, ...
+        .x,
+        {{parameter}},
+        thresholds         = thresholds,
+        clean_thresh       = clean_thresh,
+        comparator         = comparator,
+        include_low        = include_low,
+        include_high       = include_high,
+        groupings          = groupings,
+        circle             = circle,
+        summary            = summary,
+        hexbin             = hexbin,
+        num_bins           = num_bins,
+        dttm_pluck_freq    = dttm_pluck_freq,
+        dttm_pluck_offset  = dttm_pluck_offset,
+        show_progress      = show_progress,
+        new_det_score      = new_det_score,
+        new_det_cont_score = new_det_cont_score,
+        new_det_score_opts = new_det_score_opts,
+        fcst_model         = .y,
+        ...
       )
     )
   )
