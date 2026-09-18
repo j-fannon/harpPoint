@@ -798,6 +798,7 @@ compute_det_mse_breakdown <- function(grouped_fcst, show_prog, pb_env, ...) {
     mse_miss     = ((dplyr::n() - 1)/(dplyr::n()))*stats::var(!!rlang::sym("obs"))*((stats::cor(!!rlang::sym("fcst"),!!rlang::sym("obs")) - (stats::sd(!!rlang::sym("fcst"))/stats::sd(!!rlang::sym("obs")))) ^ 2),
     corr         = stats::cor(!!rlang::sym("fcst"),!!rlang::sym("obs")),
     act          = stats::sd(!!rlang::sym("fcst"))/stats::sd(!!rlang::sym("obs")),
+    varr         = ((dplyr::n() - 1)/(dplyr::n()))*stats::var(!!rlang::sym("obs")),
     .groups = "drop"
   )
 }
