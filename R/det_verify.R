@@ -793,7 +793,7 @@ compute_det_mse_breakdown <- function(grouped_fcst, show_prog, pb_env, ...) {
     grouped_fcst,
     num_stations = length(unique(!!rlang::sym("SID"))),
     num_cases    = dplyr::n(),
-    mse_bias     = (mean(!!rlang::sym("fcst_bias"))) ^ 2,
+    mse_bias     = (mean(!!rlang::sym("fcst") - !!rlang::sym("obs"))) ^ 2,
     mse_var      = ((dplyr::n() - 1)/(dplyr::n()))*stats::var(!!rlang::sym("obs"))*(1 - (stats::cor(!!rlang::sym("fcst"),!!rlang::sym("obs"))) ^ 2),
     mse_miss     = ((dplyr::n() - 1)/(dplyr::n()))*stats::var(!!rlang::sym("obs"))*((stats::cor(!!rlang::sym("fcst"),!!rlang::sym("obs")) - (stats::sd(!!rlang::sym("fcst"))/stats::sd(!!rlang::sym("obs")))) ^ 2),
     corr         = stats::cor(!!rlang::sym("fcst"),!!rlang::sym("obs")),
