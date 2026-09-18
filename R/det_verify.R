@@ -168,6 +168,7 @@ det_verify <- function(
   groupings          = "lead_time",
   circle             = NULL,
   summary            = TRUE,
+  mse_breakdown      = FALSE,
   hexbin             = TRUE,
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
@@ -201,6 +202,7 @@ det_verify.harp_ens_point_df <- function(
   groupings          = "lead_time",
   circle             = NULL,
   summary            = TRUE,
+  mse_breakdown      = FALSE,
   hexbin             = TRUE,
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
@@ -247,7 +249,7 @@ det_verify.harp_ens_point_df <- function(
           ),
           {{parameter}}, thresholds, clean_thresh,
           comparator, include_low, include_high,
-          groupings, circle, summary, hexbin, num_bins,
+          groupings, circle, summary, mse_breakdown, hexbin, num_bins,
           dttm_pluck_freq, dttm_pluck_offset,
           show_progress, new_det_score, new_det_cont_score, new_det_score_opts,
           fcst_model, ...
@@ -272,6 +274,7 @@ det_verify.harp_det_point_df <- function(
   groupings          = "lead_time",
   circle             = NULL,
   summary            = TRUE,
+  mse_breakdown      = FALSE,
   hexbin             = TRUE,
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
@@ -362,6 +365,14 @@ det_verify.harp_det_point_df <- function(
       dttm_pluck_offset = dttm_pluck_offset, score_opts = list(circle = circle)
     )
   }
+  
+  if (mse_breakdown) {
+    det_summary_scores[["mse_breakdown"]] <- compute_score(
+      groupings, .fcst, fcst_col, chr_param, fcst_model,
+      "mse_breakdown", show_progress, dttm_pluck_freq = dttm_pluck_freq,
+      dttm_pluck_offset = dttm_pluck_offset, score_opts = list(circle = circle)
+    )
+  }
 
   if (hexbin) {
     det_summary_scores[["hexbin"]] <- compute_score(
@@ -434,6 +445,7 @@ det_verify.harp_list <- function(
   groupings          = "lead_time",
   circle             = NULL,
   summary            = TRUE,
+  mse_breakdown      = FALSE,
   hexbin             = TRUE,
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
@@ -463,6 +475,7 @@ det_verify.harp_list <- function(
         groupings          = groupings,
         circle             = circle,
         summary            = summary,
+        mse_breakdown      = mse_breakdown,
         hexbin             = hexbin,
         num_bins           = num_bins,
         dttm_pluck_freq    = dttm_pluck_freq,
@@ -770,6 +783,21 @@ compute_det_summary <- function(grouped_fcst, show_prog, pb_env, ...) {
     ),
     mean_fcst    = mean(!!rlang::sym("fcst")),
     mean_obs     = mean(!!rlang::sym("obs")),
+    .groups = "drop"
+  )
+}
+
+# MSE breakdown
+compute_det_mse_breakdown <- function(grouped_fcst, show_prog, pb_env, ...) {
+  dplyr::summarise(
+    grouped_fcst,
+    num_stations = length(unique(!!rlang::sym("SID"))),
+    num_cases    = dplyr::n(),
+    mse_bias     = (mean(!!rlang::sym("fcst_bias"))) ^ 2,
+    mse_var      = ((dplyr::n() - 1)/(dplyr::n()))*stats::var(!!rlang::sym("obs"))*(1 - (stats::cor(!!rlang::sym("fcst"),!!rlang::sym("obs"))) ^ 2),
+    mse_miss     = ((dplyr::n() - 1)/(dplyr::n()))*stats::var(!!rlang::sym("obs"))*((stats::cor(!!rlang::sym("fcst"),!!rlang::sym("obs")) - (stats::sd(!!rlang::sym("fcst"))/stats::sd(!!rlang::sym("obs")))) ^ 2),
+    corr         = stats::cor(!!rlang::sym("fcst"),!!rlang::sym("obs")),
+    act          = stats::sd(!!rlang::sym("fcst"))/stats::sd(!!rlang::sym("obs")),
     .groups = "drop"
   )
 }
