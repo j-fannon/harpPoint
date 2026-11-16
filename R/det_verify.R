@@ -173,6 +173,7 @@ det_verify <- function(
   circle             = NULL,
   summary            = c(TRUE, TRUE),
   hexbin             = c(TRUE, FALSE),
+  mse_breakdown      = FALSE,
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
   dttm_pluck_offset  = NULL,
@@ -208,6 +209,7 @@ det_verify.harp_ens_point_df <- function(
   circle             = NULL,
   summary            = c(TRUE, TRUE),
   hexbin             = c(TRUE, FALSE),
+  mse_breakdown      = FALSE,
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
   dttm_pluck_offset  = NULL,
@@ -254,7 +256,7 @@ det_verify.harp_ens_point_df <- function(
           {{parameter}}, thresholds, clean_thresh,
           comparator, include_low, include_high,
           groupings, map_groupings, map_thresholds = FALSE, circle, summary,
-          hexbin, num_bins, dttm_pluck_freq, dttm_pluck_offset,
+          hexbin, mse_breakdown, num_bins, dttm_pluck_freq, dttm_pluck_offset,
           show_progress, new_det_score, new_det_cont_score, new_det_score_opts,
           fcst_model, ...
         )
@@ -281,6 +283,7 @@ det_verify.harp_det_point_df <- function(
   circle             = NULL,
   summary            = c(TRUE, TRUE),
   hexbin             = c(TRUE, FALSE),
+  mse_breakdown      = FALSE,
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
   dttm_pluck_offset  = NULL,
@@ -405,6 +408,14 @@ det_verify.harp_det_point_df <- function(
       dttm_pluck_offset = dttm_pluck_offset, score_opts = list(circle = circle)
     )
   }
+  
+  if (mse_breakdown) {
+    det_summary_scores[["mse_breakdown"]] <- compute_score(
+      groupings, .fcst, fcst_col, chr_param, fcst_model,
+      "mse_breakdown", show_progress, dttm_pluck_freq = dttm_pluck_freq,
+      dttm_pluck_offset = dttm_pluck_offset, score_opts = list(circle = circle)
+    )
+  }
 
   if (hexbin[1]) {
     score_map_groupings <- get_score_map_groupings(hexbin, map_groupings)
@@ -521,6 +532,7 @@ det_verify.harp_list <- function(
   circle             = NULL,
   summary            = c(TRUE, TRUE),
   hexbin             = c(TRUE, FALSE),
+  mse_breakdown      = FALSE,
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
   dttm_pluck_offset  = NULL,
@@ -551,6 +563,7 @@ det_verify.harp_list <- function(
         map_thresholds     = map_thresholds,
         circle             = circle,
         summary            = summary,
+        mse_breakdown      = mse_breakdown,
         hexbin             = hexbin,
         num_bins           = num_bins,
         dttm_pluck_freq    = dttm_pluck_freq,
@@ -893,6 +906,22 @@ compute_det_summary <- function(grouped_fcst, show_prog, pb_env, ...) {
     ),
     mean_fcst    = mean(!!rlang::sym("fcst")),
     mean_obs     = mean(!!rlang::sym("obs")),
+    .groups = "drop"
+  )
+}
+
+# MSE breakdown
+compute_det_mse_breakdown <- function(grouped_fcst, show_prog, pb_env, ...) {
+  dplyr::summarise(
+    grouped_fcst,
+    num_stations = length(unique(!!rlang::sym("SID"))),
+    num_cases    = dplyr::n(),
+    mse_bias     = (mean(!!rlang::sym("fcst") - !!rlang::sym("obs"))) ^ 2,
+    mse_var      = ((dplyr::n() - 1)/(dplyr::n()))*stats::var(!!rlang::sym("obs"))*(1 - (stats::cor(!!rlang::sym("fcst"),!!rlang::sym("obs"))) ^ 2),
+    mse_miss     = ((dplyr::n() - 1)/(dplyr::n()))*stats::var(!!rlang::sym("obs"))*((stats::cor(!!rlang::sym("fcst"),!!rlang::sym("obs")) - (stats::sd(!!rlang::sym("fcst"))/stats::sd(!!rlang::sym("obs")))) ^ 2),
+    corr         = stats::cor(!!rlang::sym("fcst"),!!rlang::sym("obs")),
+    act          = stats::sd(!!rlang::sym("fcst"))/stats::sd(!!rlang::sym("obs")),
+    varr         = ((dplyr::n() - 1)/(dplyr::n()))*stats::var(!!rlang::sym("obs")),
     .groups = "drop"
   )
 }
