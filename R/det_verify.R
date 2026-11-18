@@ -410,8 +410,9 @@ det_verify.harp_det_point_df <- function(
   }
   
   if (mse_breakdown) {
+    score_map_groupings <- get_score_map_groupings(mse_breakdown, map_groupings)
     det_summary_scores[["mse_breakdown"]] <- compute_score(
-      groupings, .fcst, fcst_col, chr_param, fcst_model,
+      groupings, score_map_groupings, .fcst, fcst_col, chr_param, fcst_model,
       "mse_breakdown", show_progress, dttm_pluck_freq = dttm_pluck_freq,
       dttm_pluck_offset = dttm_pluck_offset, score_opts = list(circle = circle)
     )
@@ -563,8 +564,8 @@ det_verify.harp_list <- function(
         map_thresholds     = map_thresholds,
         circle             = circle,
         summary            = summary,
-        mse_breakdown      = mse_breakdown,
         hexbin             = hexbin,
+        mse_breakdown      = mse_breakdown,
         num_bins           = num_bins,
         dttm_pluck_freq    = dttm_pluck_freq,
         dttm_pluck_offset  = dttm_pluck_offset,
