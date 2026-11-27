@@ -237,7 +237,7 @@ det_verify.harp_ens_point_df <- function(
         sub_model_name <- regmatches(
           mbr, regexpr("[[:graph:]]+(?=_mbr[0-9]{3})", mbr, perl = TRUE)
         )
-        mbr_name <- regmatches(mbr, regexpr("mbr[0-9]{3}[[:graph:]]*", mbr))
+        mbr_name <- regmatches(mbr, regexpr("mbr[0-9]{3}(?!.*mbr[0-9]{3})", mbr, perl = TRUE))
         cli::cli_inform(
           cli::col_cyan(
             "Det member verification for: {cli::col_br_yellow(mbr)}"
